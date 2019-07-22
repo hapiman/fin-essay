@@ -89,6 +89,36 @@ func grabThisWeek(ctx context.Context) []Essay {
 	return essayList
 }
 
+func ReadEssay() []Essay {
+	// 确保文件夹和文件存在
+	EnsureEssayDir()
+	filePath := GetEssayFilePath("iyiou.md")
+
+	results := []Essay{} // 返回数据
+	essays := utils.ReadLineEachTime(filePath)
+	for _, eRow := range essays {
+		eArr := strings.Split(eRow, "@@")
+		timeStr := eArr[3]
+		eEntity := Essay{Title: eArr[0], Url: eArr[1], Author: eArr[2], Time: eArr[3]}
+		if strings.Index(timeStr, "前") > -1 { // 比较时间
+			results = append(results, eEntity)
+			continue
+		}
+		oldT, err := time.ParseInLocation("2006-01-02 15:04:05", timeStr, time.Local)
+		if err != nil { // handle error
+			fmt.Println("time format error occurs: ", err.Error())
+			continue
+		}
+		oldSeds := oldT.Unix()
+		curSeds := time.Now().Unix()
+		duSeds := int64(7 * 24 * 60 * 60)
+		if curSeds-oldSeds <= duSeds {
+			results = append(results, eEntity)
+		}
+	}
+	return results
+}
+
 func Grab() []Essay {
 	// 初始化
 	// 打开网页

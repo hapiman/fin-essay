@@ -12,13 +12,27 @@
 
 ### 本周最火
 
-## 项目运行及部署
+## 项目部署
 - [X] 直接运行
 ```sh
 go run main.go
 ```
 - [ ] docker
 - [ ] k8s
+
+## 后台任务设计
+
+当前使用`chromedp`模拟用户抓取网页的时候，总是会出现超时的情况；另外不肯能每次访问接口，都去第三方抓取网页，所以需要设计本地存储的方式。
+如何判断是否是同一篇文章：使用文章名称+文章链接的哈希的方式判断是否是同一篇文章。
+
+文件中内容格式：名称 链接 作者 时间 哈希码；另外，单个数据源存储在单个文件中。
+
+## 涉及技术
+
+- [gin](https://github.com/gin-gonic/gin)
+- [goquery](https://github.com/PuerkitoBio/goquery)
+- [gjson](https://github.com/tidwall/gjson)
+- [chromewd](https://github.com/chromedp/chromedp)
 
 ## 接口文档
 ```sh
