@@ -16,8 +16,9 @@ func formatSuccResp(iList []crawer.Essay) gin.H {
 
 func main() {
 	r := gin.Default()
+	go crawer.StartTaskRobot()
 	r.GET("/fin/iyiou", func(c *gin.Context) {
-		iList := crawer.Grab()
+		iList := crawer.ReadEssay()
 		c.JSON(200, formatSuccResp(iList))
 	})
 	r.GET("/fin/wdzj", func(c *gin.Context) {

@@ -3,7 +3,9 @@ package crawer
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -45,6 +47,7 @@ func grabRobot(ctx context.Context, pageNo int) string {
 		if err == nil {
 			break
 		}
+		fmt.Println("grab error: ", err.Error())
 		log.Println(fmt.Sprintf("Try %d times", tryTimes))
 		tryTimes++
 	}
@@ -98,6 +101,9 @@ func ReadEssay() []Essay {
 	essays := utils.ReadLineEachTime(filePath)
 	for _, eRow := range essays {
 		eArr := strings.Split(eRow, "@@")
+		if len(eArr) < 5 {
+			continue
+		}
 		timeStr := eArr[3]
 		eEntity := Essay{Title: eArr[0], Url: eArr[1], Author: eArr[2], Time: eArr[3]}
 		if strings.Index(timeStr, "前") > -1 { // 比较时间
@@ -119,6 +125,79 @@ func ReadEssay() []Essay {
 	return results
 }
 
+func appendFile(filePath string, essays []Essay) {
+	// 打开文件
+	f, _ := os.OpenFile(filePath, os.O_APPEND|os.O_RDONLY|os.O_WRONLY, os.ModeAppend) //打开文件
+	defer f.Close()
+
+	cStr := utils.ReadAllOnce(filePath)
+	lines := strings.Split(cStr, "\n")
+
+	for _, es := range essays {
+		exsit := false
+		for _, line := range lines {
+			newTitle := es.Title
+			cells := strings.Split(line, "@@")
+			oldTitle := cells[0]
+			if newTitle == oldTitle {
+				exsit = true
+			}
+		}
+		if !exsit { //创建
+			timeStr := es.Time
+			if strings.Index(timeStr, "前") < 0 {
+				timeStr = fmt.Sprintf("%s 00:00:01", es.Time)
+			}
+			rowStr := fmt.Sprintf("%s@@%s@@%s@@%s@@%s\n", es.Title, es.Url, es.Author, timeStr, "xxxx")
+			_, err := f.Write([]byte(rowStr))
+			if err != nil {
+				fmt.Println("error ->", err.Error())
+			}
+		}
+	}
+}
+
+func WriteEssay(essays []Essay) {
+	EnsureEssayDir()
+	filePath := GetEssayFilePath("iyiou.md")
+
+	appendFile(filePath, essays)
+
+	cStr := utils.ReadAllOnce(filePath)
+	fmt.Println("cStr =>", cStr)
+	lines := strings.Split(cStr, "\n")
+
+	// 判断
+	for i, line := range lines {
+		cells := strings.Split(line, "@@")
+		if len(cells) < 5 {
+			continue
+		}
+		oldTitle := cells[0]
+		oldTime := cells[3]
+
+		if strings.Index(oldTime, "前") < 0 {
+			continue
+		}
+		for _, essay := range essays {
+			if essay.Title == oldTitle { // 替换
+				if strings.Index(essay.Time, "前") > -1 {
+					cells[3] = essay.Time
+				} else {
+					cells[3] = fmt.Sprintf("%s 00:00:01", essay.Time)
+				}
+				fmt.Println("cells =>", cells)
+			}
+		}
+		lines[i] = strings.Join(cells, "@@")
+	}
+	output := strings.Join(lines, "\n")
+	err := ioutil.WriteFile(filePath, []byte(output), 0644)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
 func Grab() []Essay {
 	// 初始化
 	// 打开网页
@@ -132,4 +211,14 @@ func Grab() []Essay {
 	res := grabThisWeek(ctx)
 	log.Println("res =>", res)
 	return res
+}
+
+// 启动任务机器
+// 每隔30分钟获取一边最新咨询
+func StartTaskRobot() {
+	for {
+		essays := Grab()
+		WriteEssay(essays)
+		time.Sleep(time.Minute * 30)
+	}
 }

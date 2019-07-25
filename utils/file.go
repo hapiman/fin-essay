@@ -9,7 +9,7 @@ import (
 )
 
 func ReadAllOnce(path string) string {
-	b, e := ioutil.ReadFile("d:/goTest/123.txt")
+	b, e := ioutil.ReadFile(path)
 	if e != nil {
 		fmt.Println("read file error")
 		return ""
