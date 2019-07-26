@@ -93,10 +93,10 @@ func grabThisWeek(ctx context.Context) []Essay {
 }
 
 // 抓取最近7天数据
-func ReadEssay() []Essay {
+func ReadEssay(fname string) []Essay {
 	// 确保文件夹和文件存在
 	EnsureEssayDir()
-	filePath := GetEssayFilePath("iyiou.md")
+	filePath := GetEssayFilePath(fmt.Sprintf("%s.md", fname))
 
 	results := []Essay{} // 返回数据
 	essays := utils.ReadLineEachTime(filePath)
@@ -158,9 +158,9 @@ func appendFile(filePath string, essays []Essay) {
 	}
 }
 
-func WriteEssay(essays []Essay) {
+func WriteEssay(essays []Essay, fname string) {
 	EnsureEssayDir()
-	filePath := GetEssayFilePath("iyiou.md")
+	filePath := GetEssayFilePath(fmt.Sprintf("%s.md", fname))
 
 	appendFile(filePath, essays)
 
@@ -218,7 +218,7 @@ func GrabIyiou() []Essay {
 func StartTaskRobot() {
 	for {
 		essays := GrabIyiou()
-		WriteEssay(essays)
+		WriteEssay(essays, "iyiou")
 		time.Sleep(time.Minute * 30)
 	}
 }

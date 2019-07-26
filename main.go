@@ -18,7 +18,7 @@ func main() {
 	r := gin.Default()
 	go crawer.StartTaskRobot()
 	r.GET("/fin/iyiou", func(c *gin.Context) {
-		iList := crawer.ReadEssay()
+		iList := crawer.ReadEssay("iyiou")
 		c.JSON(200, formatSuccResp(iList))
 	})
 	r.GET("/fin/wdzj", func(c *gin.Context) {
