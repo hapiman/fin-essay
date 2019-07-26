@@ -38,7 +38,7 @@ func grabRobot(ctx context.Context, pageNo int) string {
 	url := fmt.Sprintf("%s/%d.html", utils.URLIyiou, pageNo)
 	content := ""
 	tryTimes := 1
-	for tryTimes < 5 {
+	for tryTimes < 5 { // 似乎没有起作用
 		err := chromedp.Run(ctx,
 			chromedp.Navigate(url),
 			chromedp.WaitVisible(`.industryPostList`),
@@ -65,7 +65,6 @@ func grabThisWeek(ctx context.Context) []Essay {
 		} else {
 			for _, ele := range temps {
 				// 如果存在数据 分钟前 小时前
-				log.Println("ele.Time =>", ele.Time)
 				ord := strings.Index(ele.Time, "分钟前")
 				if ord > 0 {
 					essayList = append(essayList, ele)
@@ -82,7 +81,8 @@ func grabThisWeek(ctx context.Context) []Essay {
 				create_Time, _ := time.ParseInLocation("2006-01-02 15:04:05", createdTime, time.Now().Location())
 				sub := time.Now().Sub(create_Time).Hours()
 				if sub > 7*24 {
-					break
+					fmt.Println("ok, go back.")
+					return essayList
 				}
 				essayList = append(essayList, ele)
 			}
@@ -92,6 +92,7 @@ func grabThisWeek(ctx context.Context) []Essay {
 	return essayList
 }
 
+// 抓取最近7天数据
 func ReadEssay() []Essay {
 	// 确保文件夹和文件存在
 	EnsureEssayDir()
@@ -164,7 +165,7 @@ func WriteEssay(essays []Essay) {
 	appendFile(filePath, essays)
 
 	cStr := utils.ReadAllOnce(filePath)
-	fmt.Println("cStr =>", cStr)
+	// fmt.Println("cStr =>", cStr)
 	lines := strings.Split(cStr, "\n")
 
 	// 判断
@@ -186,7 +187,6 @@ func WriteEssay(essays []Essay) {
 				} else {
 					cells[3] = fmt.Sprintf("%s 00:00:01", essay.Time)
 				}
-				fmt.Println("cells =>", cells)
 			}
 		}
 		lines[i] = strings.Join(cells, "@@")
@@ -198,18 +198,18 @@ func WriteEssay(essays []Essay) {
 	}
 }
 
-func Grab() []Essay {
+func GrabIyiou() []Essay {
 	// 初始化
 	// 打开网页
 	// 解析网页内容
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 	// create a timeout
-	ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
-	log.Println("grab start")
+	// ctx, cancel = context.WithTimeout(ctx, 90*time.Second)
+	// defer cancel()
+	log.Println("GrabIyiou start")
 	res := grabThisWeek(ctx)
-	log.Println("res =>", res)
+	log.Println("GrabIyiou get list =>", res)
 	return res
 }
 
@@ -217,7 +217,7 @@ func Grab() []Essay {
 // 每隔30分钟获取一边最新咨询
 func StartTaskRobot() {
 	for {
-		essays := Grab()
+		essays := GrabIyiou()
 		WriteEssay(essays)
 		time.Sleep(time.Minute * 30)
 	}
