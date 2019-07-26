@@ -18,21 +18,19 @@ func ParseWdzjHtmlContent(content string) []Essay {
 	if err != nil {
 		log.Fatal(err)
 	}
-	doc.Find(".zllist li").Each(func(i int, s *goquery.Selection) {
+	doc.Find(".zllist li").Each(func(idx int, s *goquery.Selection) {
 		aEle := s.Find("li .text h3 a")
 		boxEle := s.Find("li .text .userxx .lbox span")
+		aEle.Find("em").Remove()
 		title := strings.TrimSpace(aEle.Text())
 		author := ""
 		time := ""
-
-		log.Println("start parse elements: ")
 		boxEle.Each(func(i int, s *goquery.Selection) {
 			curText := strings.TrimSpace(s.Text())
-			fmt.Println("boxEle =>", i)
 			if i == 0 {
 				author = curText
 			}
-			childLen := boxEle.Children().Length()
+			childLen := boxEle.Length()
 			if childLen == 3 { // 存在作者名称
 				if i == 2 {
 					time = curText
@@ -40,6 +38,8 @@ func ParseWdzjHtmlContent(content string) []Essay {
 				if i == 1 {
 					author = fmt.Sprintf("%s-%s", author, curText)
 				}
+			} else if childLen == 1 {
+				time = curText
 			} else {
 				if i == 1 {
 					time = curText
@@ -48,6 +48,8 @@ func ParseWdzjHtmlContent(content string) []Essay {
 		})
 		href, _ := aEle.Attr("href")
 		href = fmt.Sprintf("%s/%s", utils.URLWdzj, strings.TrimSpace(href))
+		// xx := fmt.Sprintf("title:%s, url: %s, time: %s, author: %s", title, href, time, author)
+		// fmt.Println("xx =>", xx)
 		essayList = append(essayList, Essay{Title: title, Url: href, Time: time, Author: author})
 	})
 	return essayList
@@ -83,6 +85,7 @@ func grabWdzjThisWeek(ctx context.Context) []Essay {
 	essayList := []Essay{}
 	for {
 		temps := ParseWdzjHtmlContent(grabWdzjRobot(ctx, pageNo))
+		fmt.Println("temps =>", temps)
 		if len(temps) == 0 {
 			break
 		} else {
@@ -99,13 +102,12 @@ func grabWdzjThisWeek(ctx context.Context) []Essay {
 					essayList = append(essayList, ele)
 					continue
 				}
-
 				// 抓取最近7天数据
-				createdTime := ele.Time
-				create_Time, _ := time.ParseInLocation("2006-01-02 15:04:05", createdTime, time.Now().Location())
-				sub := time.Now().Sub(create_Time).Hours()
-				if sub > 7*24 {
-					break
+				createdTime, _ := time.ParseInLocation("2006-01-02 15:04:05", ele.Time, time.Now().Location())
+				diffDays := int(time.Now().Sub(createdTime).Hours())
+				fmt.Println("createdTime => ", createdTime, diffDays)
+				if diffDays > 1*24 {
+					return essayList
 				}
 				essayList = append(essayList, ele)
 			}
@@ -122,8 +124,8 @@ func Grab_WDZJ() []Essay {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 	// create a timeout
-	ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
-	defer cancel()
+	// ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
+	// defer cancel()
 	log.Println("wdzj grab start")
 	res := grabWdzjThisWeek(ctx)
 	log.Println("res =>", res)

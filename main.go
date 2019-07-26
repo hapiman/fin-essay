@@ -22,7 +22,7 @@ func main() {
 		c.JSON(200, formatSuccResp(iList))
 	})
 	r.GET("/fin/wdzj", func(c *gin.Context) {
-		iList := crawer.Grab_WDZJ()
+		iList := crawer.ReadEssay("wdzj")
 		c.JSON(200, formatSuccResp(iList))
 	})
 	r.GET("/fin/huxiu", func(c *gin.Context) {
