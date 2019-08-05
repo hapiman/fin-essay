@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/hapiman/fin-essay/crawer"
 )
@@ -16,6 +17,7 @@ func formatSuccResp(iList []crawer.Essay) gin.H {
 
 func main() {
 	r := gin.Default()
+	r.Use(cors.Default())
 	go crawer.StartTaskRobot()
 	r.GET("/fin/iyiou", func(c *gin.Context) {
 		iList := crawer.ReadEssay("iyiou")
